@@ -1,0 +1,13 @@
+#tile-holder {
+  display: flex;
+}
+
+.tile {
+  width: 3rem;
+  height: 3rem;
+  margin: 1rem;
+  border: 1px black solid;
+  background-color: rgba(100, 0, 50, 0.8);
+  text-align: center;
+  color: #eee;
+}
