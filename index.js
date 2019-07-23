@@ -15,7 +15,16 @@ const tile = (note, num) => {
   `;
 };
 
-const keys = ["z", "x", "c", "v", "b", "n", "m", ","];
+const Key = (_keyName, _isPlaying) => {
+  return {
+    keyName: _keyName,
+    isPlaying: _isPlaying
+  };
+};
+
+const keys = ["z", "x", "c", "v", "b", "n", "m", ","].map(key =>
+  Key(key, false)
+);
 
 $(document).ready(() => {
   MakeScale(ScaleTypes.MINOR, "C0").forEach((key, i) => {
@@ -81,16 +90,20 @@ $(document)
       });
     }
     keys.forEach((key, i) => {
-      if (e.key === key) {
+      if (e.key === key.keyName) {
         Tone.context.resume();
-        synth.triggerAttack([currentScale[i]]);
+        if (!key.isPlaying) {
+          key.isPlaying = true;
+          synth.triggerAttack([currentScale[i]]);
+        }
       }
     });
   })
   .keyup(e => {
     keys.forEach((key, i) => {
-      if (e.key === key) {
+      if (e.key === key.keyName) {
         Tone.context.resume();
+        key.isPlaying = false;
         synth.triggerRelease([currentScale[i]]);
       }
     });
