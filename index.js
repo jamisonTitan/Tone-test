@@ -1,10 +1,14 @@
-/* eslint-disable no-debugger */
-/* eslint-disable no-undef */
 import { MakeScale, ScaleTypes } from "./shared/utils.js";
-let currentScale = MakeScale(ScaleTypes.MINOR, "C4");
+
+let prevScales = [MakeScale(ScaleTypes.MINOR, "C0")];
+let prevScalesIndex = 0;
+let currentScale = MakeScale(ScaleTypes.MINOR, "C0");
+window.myStorage = {};
+myStorage.currentOctave = 0;
+
 var synth = new Tone.PolySynth(6, Tone.Synth, {
   oscillator: {
-    type: "sawtooth",
+    type: "sine",
     partials: [0, 2, 3, 4]
   }
 }).toMaster();
@@ -33,55 +37,56 @@ $(document).ready(() => {
       synth.triggerAttackRelease(key, "8n");
     });
   });
-
-  $("#enter").on("click", () => {
-    let note = //Capitalize first letter
-      $("#root")
-        .val()
-        .charAt(0)
-        .toUpperCase() +
-      $("#root")
-        .val()
-        .slice(1);
-    console.log(MakeScale(ScaleTypes.MINOR, note));
-    $("#tile-container").empty();
-  });
+  Tone.Transport.start();
+  Tone.Transport.loop = true;
+  Tone.Transport.loopStart = 0;
+  Tone.Transport.loopEnd = "2m";
 });
 
-// const onkeydown = e => {
-//   $(`#tile-${Object.keys(keyToPitch).indexOf(e.key)}`).css(
-//     "background-color",
-//     "#eee"
-//   );
-//   synth.triggerAttack(keyToPitch[e.key], Tone.context.currentTime);
-// };
-// const onkeyup = e => {
-//   $(`#tile-${Object.keys(keyToPitch).indexOf(e.key)}`).css(
-//     "background-color",
-//     "rgba(100, 0, 50, 0.8)"
-//   );
-//   synth.triggerRelease(keyToPitch[e.key]);
-// };
+const addScheduleReleaseToloop = (note, tileIndex) => {
+  Tone.Transport.schedule(time => {
+    synth.triggerRelease([note]);
+    $(`#tile-${tileIndex}`).css("background-color", "#640032");
+  }, Tone.Transport.getSecondsAtTime());
+};
 
-// window.addEventListener("keydown", onkeydown);
-// window.addEventListener("keyup", onkeyup);
+const addScheduleAttackToLoop = (note, tileIndex) => {
+  Tone.Transport.schedule(time => {
+    synth.triggerAttack([note]);
+    $(`#tile-${tileIndex}`).css("background-color", "#880033");
+  }, Tone.Transport.getSecondsAtTime());
+};
+
+const capitalize = string => {
+  return (
+    string
+      .slice()
+      .val()
+      .charAt(0)
+      .toUpperCase() + string.val().slice(1)
+  );
+};
+
+const isolateOctave = scaleSignature => {
+  return scaleSignature
+    .slice()
+    .split("")
+    .filter(char =>
+      ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(char)
+    )[0];
+};
 
 $(document)
   .keypress(e => {
-    console.log("keydown");
-    Tone.context.resume();
     if (e.key === "Enter") {
       $("#tile-holder").empty();
-      let note = //Capitalize first letter
-        $("#root")
-          .val()
-          .charAt(0)
-          .toUpperCase() +
-        $("#root")
-          .val()
-          .slice(1);
+      let note = capitalize($("#root"));
+      window.myStorage.currentOctave = isolateOctave(note);
+      console.log(window.myStorage.currentOctave, "co");
       console.log(MakeScale(ScaleTypes.MINOR, note));
       currentScale = MakeScale(ScaleTypes.MINOR, note);
+      prevScales.push(currentScale);
+      prevScalesIndex++;
       currentScale.forEach((note, i) => {
         $("#tile-holder").append(tile(note, i));
         $(`#tile-${i}`).on("click", () => {
@@ -91,10 +96,12 @@ $(document)
     }
     keys.forEach((key, i) => {
       if (e.key === key.keyName) {
-        Tone.context.resume();
         if (!key.isPlaying) {
+          Tone.context.resume();
           key.isPlaying = true;
-          synth.triggerAttack([currentScale[i]]);
+          //synth.triggerAttack([currentScale[i]]);
+          addScheduleAttackToLoop(prevScales[prevScalesIndex][i], i);
+          $(`#tile-${i}`).css("background-color", "#880033");
         }
       }
     });
@@ -103,8 +110,10 @@ $(document)
     keys.forEach((key, i) => {
       if (e.key === key.keyName) {
         Tone.context.resume();
+        //synth.triggerRelease([currentScale[i]]);
         key.isPlaying = false;
-        synth.triggerRelease([currentScale[i]]);
+        addScheduleReleaseToloop(prevScales[prevScalesIndex][i], i);
+        $(`#tile-${i}`).css("background-color", "#640032");
       }
     });
   });

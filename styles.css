@@ -7,7 +7,11 @@
   height: 3rem;
   margin: 1rem;
   border: 1px black solid;
-  background-color: rgba(100, 0, 50, 0.8);
+  background-color: #640032;
   text-align: center;
   color: #eee;
+}
+
+body {
+  text-align: center;
 }
