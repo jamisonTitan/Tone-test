@@ -1,10 +1,10 @@
 import { MakeScale, ScaleTypes } from "./shared/utils.js";
-
 let prevScales = [MakeScale(ScaleTypes.MINOR, "C0")];
 let prevScalesIndex = 0;
 let currentScale = MakeScale(ScaleTypes.MINOR, "C0");
-window.myStorage = {};
-myStorage.currentOctave = 0;
+window.myStorage = {
+  currentOctave: 0
+};
 
 var synth = new Tone.PolySynth(6, Tone.Synth, {
   oscillator: {
@@ -31,7 +31,7 @@ const keys = ["z", "x", "c", "v", "b", "n", "m", ","].map(key =>
 );
 
 $(document).ready(() => {
-  MakeScale(ScaleTypes.MINOR, "C0").forEach((key, i) => {
+  currentScale.forEach((key, i) => {
     $("#tile-holder").append(tile(key, i));
     $(`#tile-${i}`).on("click", () => {
       synth.triggerAttackRelease(key, "8n");
@@ -57,26 +57,7 @@ const addScheduleAttackToLoop = (note, tileIndex) => {
   }, Tone.Transport.getSecondsAtTime());
 };
 
-const capitalize = string => {
-  return (
-    string
-      .slice()
-      .val()
-      .charAt(0)
-      .toUpperCase() + string.val().slice(1)
-  );
-};
-
-const isolateOctave = scaleSignature => {
-  return scaleSignature
-    .slice()
-    .split("")
-    .filter(char =>
-      ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(char)
-    )[0];
-};
-
-$(document)
+$(document) //click handlers
   .keypress(e => {
     if (e.key === "Enter") {
       $("#tile-holder").empty();
@@ -117,3 +98,22 @@ $(document)
       }
     });
   });
+
+const capitalize = string => {
+  return (
+    string
+      .slice()
+      .val()
+      .charAt(0)
+      .toUpperCase() + string.val().slice(1)
+  );
+};
+
+const isolateOctave = scaleSignature => {
+  return scaleSignature
+    .slice()
+    .split("")
+    .filter(char =>
+      ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(char)
+    )[0];
+};

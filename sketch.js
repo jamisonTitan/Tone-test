@@ -31,15 +31,16 @@ function draw() {
   background(255, 0, 255);
   line(pos, HEIGHT, pos, 0);
   filledNotes.forEach((filledNote, i) => {
+    noStroke();
     fill(filledNote.color);
     rect(filledNote.x, filledNote.y, SCALEX, SCALEY);
   });
-  for (let i = 0; i < WIDTH / SCALEX; i++) {
-    for (let j = 0; j < HEIGHT / SCALEY; j++) {
+  for (let i = -SCALEX; i < WIDTH; i += SCALEX) {
+    for (let j = -SCALEY; j < HEIGHT; j += SCALEY) {
       noFill();
       stroke("#000");
       strokeWeight(0.1);
-      rect(i * SCALEX, j * SCALEY, SCALEX, SCALEY);
+      rect(i, j, SCALEX - 1, SCALEY - 1);
     }
   }
 }
@@ -49,10 +50,11 @@ function keyPressed() {
     if (keyCode === eventKeys[i]) {
       currentOctave = Number(window.myStorage.currentOctave);
       let indexOfKey = keys.indexOf(key);
-      let octaveHeight = SCALEY * 8;
+      let numOfKeys = 8;
+      let octaveHeight = SCALEY * numOfKeys;
       //something wrong with calculating the scale for the filledNotes
-      let y = currentOctave * octaveHeight + 1 + (indexOfKey + 1) * 8;
-      y = Math.abs(HEIGHT - y);
+      let y = currentOctave * (octaveHeight + 1) + indexOfKey * SCALEY;
+      y = Math.abs(HEIGHT - y) - SCALEY;
       filledNotes.push(FilledNote(pos, y, "#000"));
     }
   });
