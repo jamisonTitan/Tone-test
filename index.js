@@ -1,9 +1,24 @@
 import { MakeScale, ScaleTypes } from "./shared/utils.js";
-let prevScales = [MakeScale(ScaleTypes.MINOR, "C0")];
 let prevScalesIndex = 0;
 let currentScale = MakeScale(ScaleTypes.MINOR, "C0");
+let prevScales = [currentScale];
+const LOOP_LENGTH = 2;
+const MIN_NOTE_LENGTH = LOOP_LENGTH / 16;
+const generateVALID_NOTE_TIMES = (noteType, LOOP_LENGTH) => {
+  let result = [];
+  for (let i = 0; i < LOOP_LENGTH; i += noteType) {
+    result.push(i);
+  }
+  return result;
+};
+const VALID_NOTE_TIMES = generateVALID_NOTE_TIMES(MIN_NOTE_LENGTH, LOOP_LENGTH);
+console.log(VALID_NOTE_TIMES);
+
 window.myStorage = {
-  currentOctave: 0
+  currentOctave: 0,
+  currentKey: "C",
+  numOfNotesInCurrentScale: currentScale.length,
+  VALID_NOTE_TIMES: VALID_NOTE_TIMES
 };
 
 var synth = new Tone.PolySynth(6, Tone.Synth, {
@@ -40,21 +55,31 @@ $(document).ready(() => {
   Tone.Transport.start();
   Tone.Transport.loop = true;
   Tone.Transport.loopStart = 0;
-  Tone.Transport.loopEnd = "2m";
+  Tone.Transport.loopEnd = "1m";
 });
 
-const addScheduleReleaseToloop = (note, tileIndex) => {
+const addScheduleReleaseToloop = (note, tileIndex, time) => {
   Tone.Transport.schedule(time => {
     synth.triggerRelease([note]);
     $(`#tile-${tileIndex}`).css("background-color", "#640032");
-  }, Tone.Transport.getSecondsAtTime());
+  }, time);
 };
 
 const addScheduleAttackToLoop = (note, tileIndex) => {
+  const time = Tone.Transport.getSecondsAtTime();
+  const distanceToValidNoteTimes = window.myStorage.VALID_NOTE_TIMES.map(
+    noteTime => Math.abs(time - noteTime)
+  );
+  const quantizedTime =
+    window.myStorage.VALID_NOTE_TIMES[
+      distanceToValidNoteTimes.indexOf(Math.min(...distanceToValidNoteTimes))
+    ];
+  console.log(quantizedTime);
   Tone.Transport.schedule(time => {
     synth.triggerAttack([note]);
     $(`#tile-${tileIndex}`).css("background-color", "#880033");
-  }, Tone.Transport.getSecondsAtTime());
+  }, quantizedTime);
+  addScheduleReleaseToloop(note, tileIndex, quantizedTime + MIN_NOTE_LENGTH);
 };
 
 $(document) //click handlers
@@ -62,17 +87,17 @@ $(document) //click handlers
     if (e.key === "Enter") {
       $("#tile-holder").empty();
       let note = capitalize($("#root"));
-      window.myStorage.currentOctave = isolateOctave(note);
-      console.log(window.myStorage.currentOctave, "co");
-      console.log(MakeScale(ScaleTypes.MINOR, note));
       currentScale = MakeScale(ScaleTypes.MINOR, note);
       prevScales.push(currentScale);
       prevScalesIndex++;
+      window.myStorage = {
+        currentOctave: isolateOctave(note),
+        currentKey: note.charAt(0),
+        numOfNotesInCurrentScale: currentScale.length,
+        VALID_NOTE_TIMES: VALID_NOTE_TIMES
+      };
       currentScale.forEach((note, i) => {
         $("#tile-holder").append(tile(note, i));
-        $(`#tile-${i}`).on("click", () => {
-          synth.triggerAttackRelease(note, "8n");
-        });
       });
     }
     keys.forEach((key, i) => {
@@ -93,7 +118,7 @@ $(document) //click handlers
         Tone.context.resume();
         //synth.triggerRelease([currentScale[i]]);
         key.isPlaying = false;
-        addScheduleReleaseToloop(prevScales[prevScalesIndex][i], i);
+        //addScheduleReleaseToloop(prevScales[prevScalesIndex][i], i);
         $(`#tile-${i}`).css("background-color", "#640032");
       }
     });
