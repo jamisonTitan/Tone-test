@@ -96,6 +96,7 @@ $(document) //click handlers
         numOfNotesInCurrentScale: currentScale.length,
         VALID_NOTE_TIMES: VALID_NOTE_TIMES
       };
+      debugger;
       currentScale.forEach((note, i) => {
         $("#tile-holder").append(tile(note, i));
       });
