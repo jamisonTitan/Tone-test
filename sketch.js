@@ -1,13 +1,7 @@
-let NUM_OF_KEYS_IN_OCTAVE,
-  NUM_OF_OCTAVES,
-  WIDTH,
-  HEIGHT,
-  SCALEX,
-  SCALEY,
-  MIN_NOTE_LENGTH; //
+let NUM_OF_KEYS_IN_OCTAVE, NUM_OF_OCTAVES, WIDTH, HEIGHT, SCALEX, SCALEY;
 const ALPHA_NAMES = ["A", "B", "C", "D", "E", "F", "G"];
 const keys = ["z", "x", "c", "v", "b", "n", "m", ","];
-const NOTECOLORS = [
+const NOTE_COLORS = [
   "#8bc34a", //green
   "#26a69a", //teal
   "#ab47bc", //purple
@@ -17,9 +11,16 @@ const NOTECOLORS = [
   "#ff80ab", //pink
   "#8bc34a" //green
 ];
+const LOOP_LENGTH = Tone.Time("1m").toSeconds();
+const MIN_NOTE_LENGTH = Tone.Time("8n").toSeconds();
+const VALID_NOTE_TIMES = [
+  ...Array(Math.floor(LOOP_LENGTH / MIN_NOTE_LENGTH) + 1)
+] //empty array with indexes for values
+  .map((_, i) => i)
+  .map(noteTime => noteTime * MIN_NOTE_LENGTH);
 const eventKeys = [90, 88, 67, 86, 66, 78, 77, 188];
 let filledNotes = [];
-let pos;
+let currPos;
 
 const FilledNote = (_x, _y, _color) => {
   const x = _x,
@@ -48,23 +49,23 @@ function setup() {
   NUM_OF_OCTAVES = 8;
   WIDTH = 704;
   HEIGHT = 440;
-  SCALEX = WIDTH / window.myStorage.VALID_NOTE_TIMES.length;
+  SCALEX = WIDTH / VALID_NOTE_TIMES.length;
   SCALEY = HEIGHT / (NUM_OF_KEYS_IN_OCTAVE * NUM_OF_OCTAVES);
-  MIN_NOTE_LENGTH = window.myStorage.VALID_NOTE_TIMES[1];
   let canvas = createCanvas(WIDTH, HEIGHT);
   canvas.parent("canvas-holder");
   background(240, 240, 240);
 }
 
 function draw() {
-  pos = (Tone.Transport.getSecondsAtTime() * WIDTH) / Tone.Transport.loopEnd;
+  currPos =
+    (Tone.Transport.getSecondsAtTime() * WIDTH) / Tone.Transport.loopEnd;
   background(240);
   filledNotes.forEach(filledNote => filledNote.draw());
   stroke("#000");
-  window.myStorage.VALID_NOTE_TIMES.forEach(noteTime =>
+  VALID_NOTE_TIMES.forEach(noteTime =>
     drawVerticalLine((noteTime * WIDTH) / Tone.Transport.loopEnd, 0.5)
   );
-  drawVerticalLine(pos, 3);
+  drawVerticalLine(currPos, 3);
 }
 
 function keyPressed() {
@@ -74,6 +75,8 @@ function keyPressed() {
       const currentKey = window.myStorage.currentKey;
       const numOfKeysInScale = window.myStorage.numOfNotesInCurrentScale;
       const indexOfCurrentKey = ALPHA_NAMES.indexOf(currentKey);
+      currPos =
+        (Tone.Transport.getSecondsAtTime() * WIDTH) / Tone.Transport.loopEnd;
       let indexOfKey = keys.indexOf(key);
       let octaveHeight = SCALEY * (NUM_OF_KEYS_IN_OCTAVE - 1);
       let y =
@@ -81,7 +84,23 @@ function keyPressed() {
         indexOfKey * (NUM_OF_KEYS_IN_OCTAVE / numOfKeysInScale) * SCALEY +
         indexOfCurrentKey * SCALEY;
       y = Math.abs(HEIGHT - y - SCALEY);
-      filledNotes.push(FilledNote(pos, y, NOTECOLORS[indexOfKey]));
+      let distToValidNoteTimes = [];
+      for (let i = 0; i < VALID_NOTE_TIMES.length; i++) {
+        let j = VALID_NOTE_TIMES[i];
+        console.log(j);
+        distToValidNoteTimes.push(
+          Math.abs(Tone.Transport.getSecondsAtTime() - j)
+        );
+      }
+      // VALID_NOTE_TIMES.map(noteTime => {
+      //   return Math.abs(currPos - noteTime);
+      // });
+      const index = distToValidNoteTimes.indexOf(
+        Math.min(...distToValidNoteTimes)
+      );
+      const quantizedTime = VALID_NOTE_TIMES[index];
+      const xpos = WIDTH * (quantizedTime / Tone.Transport.loopEnd);
+      filledNotes.push(FilledNote(xpos, y, NOTE_COLORS[indexOfKey]));
     }
   });
 }
