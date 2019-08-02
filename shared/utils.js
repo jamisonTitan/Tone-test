@@ -1,16 +1,14 @@
-/* eslint-disable no-debugger */
 import { MidiNoteNames } from "./midiNoteNames.js";
 
 const MIDI_NOTES_SHARP = MidiNoteNames.sharp;
 const MIDI_NOTES_FLAT = MidiNoteNames.flat;
-
 const ALPHA_NAMES = ["A", "B", "C", "D", "E", "F", "G"];
 
 export const NoteNameToMidi = noteName => {
   let midiKey = -1;
   for (let i = 0; i < MIDI_NOTES_SHARP.length; i++) {
     if (noteName === MIDI_NOTES_SHARP[i] || noteName === MIDI_NOTES_FLAT[i]) {
-      midiKey = i; // found it
+      midiKey = i;
     }
   }
   return Number(midiKey); // It should be a number anyway but who the fuck cares i dont trust you javascript and im too lazy to use typescript
